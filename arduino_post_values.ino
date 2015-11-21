@@ -30,7 +30,7 @@ static void sendToAPI (int id, int value) {
   stash.print(id);
   stash.save();
   int stash_size = stash.size();
-  
+
   Stash::prepare(PSTR("POST https://$F$F HTTP/1.0" "\r\n"
     "Host: $F" "\r\n"
     "Content-Length: $D" "\r\n"
@@ -45,14 +45,14 @@ void setup () {
   Serial.begin(57600);
   Serial.println("\n[API Client]");
 
-  if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) 
+  if (ether.begin(sizeof Ethernet::buffer, mymac) == 0)
     Serial.println(F("Failed to access Ethernet controller"));
   if (!ether.dhcpSetup())
     Serial.println(F("DHCP failed"));
 
   ether.printIp("IP:  ", ether.myip);
-  ether.printIp("GW:  ", ether.gwip);  
-  ether.printIp("DNS: ", ether.dnsip);  
+  ether.printIp("GW:  ", ether.gwip);
+  ether.printIp("DNS: ", ether.dnsip);
 
   if (!ether.dnsLookup(website))
     Serial.println(F("DNS failed"));
@@ -60,11 +60,11 @@ void setup () {
   ether.printIp("SRV: ", ether.hisip);
 }
 
-void loop () {  
+void loop () {
   static Dht11 sensor(DHT_DATA_PIN);
   int temp_val = 0;
   int hum_val = 0;
-  
+
   word len = ether.packetReceive();
   word pos = ether.packetLoop(len);
 
@@ -83,9 +83,9 @@ void loop () {
             next = 2;
             delay(2000);
             break;
-          
+
           case 2:
-            Serial.print("Temperature (%): ");
+            Serial.print("Temperature (C): ");
             temp_val = sensor.getTemperature();
             Serial.println(temp_val);
             if (millis() > timer) {
@@ -97,15 +97,15 @@ void loop () {
             break;
         }
         break;
-              
+
       case Dht11::ERROR_CHECKSUM:
         Serial.println("Checksum error");
         break;
-        
+
       case Dht11::ERROR_TIMEOUT:
         Serial.println("Timeout error");
         break;
-        
+
       default:
         Serial.println("Unknown error");
         break;
