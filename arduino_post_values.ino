@@ -1,27 +1,45 @@
+/*
+ * arduino_post_values.ino
+ *
+ * Program that sends sensors values from an Arduino board to an RESTful API.
+ * Author: Ivan Gonzalez (a.k.a dreamingechoes)
+ */
+
 #include <EtherCard.h>
 #include "Arduino.h"
 #include "Dht11.h"
 
+// RESTful API token for authentication.
+// Change it to the one you need.
 #define TOKEN  "ac4bd425935c350a54aabb362906283f"
 
+// Ethernet interface mac address, must be unique on the LAN
 byte mymac[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
 
+// Global variables
 const char website[] PROGMEM = "sensors-admin-panel.herokuapp.com";
 static byte session;
-byte Ethernet::buffer[700];
 int next = 1;
 static uint32_t timer;
-
-Stash stash;
 enum {
   DHT_DATA_PIN = 2,
   SERIAL_BAUD  = 9600,
   POLL_DELAY   = 2000,
 };
 
+byte Ethernet::buffer[700];
+Stash stash;
+
+/*
+* function sendToAPI
+*
+*   int id: ID of the sensor on the final RESTful API application
+*   int value: value of the sensor measure that will be send
+*/
 static void sendToAPI (int id, int value) {
   byte sd = stash.create();
 
+  // Assign the values to the request params.
   stash.print("token=");
   stash.print(TOKEN);
   stash.print("&value=");
@@ -31,6 +49,8 @@ static void sendToAPI (int id, int value) {
   stash.save();
   int stash_size = stash.size();
 
+  // Compose the http POST request, taking the headers below and appending
+  // previously created stash in the sd holder.
   Stash::prepare(PSTR("POST https://$F$F HTTP/1.0" "\r\n"
     "Host: $F" "\r\n"
     "Content-Length: $D" "\r\n"
@@ -38,10 +58,13 @@ static void sendToAPI (int id, int value) {
     "$H"),
   website, PSTR("/api/v1/measures"), website, stash_size, sd);
 
+  // Send the packet. This also releases all stash buffers once done.
+  // Save the session ID so we can watch for it in the main loop.
   session = ether.tcpSend();
 }
 
 void setup () {
+  // Setup the Ethernet chip
   Serial.begin(57600);
   Serial.println("\n[API Client]");
 
@@ -61,18 +84,20 @@ void setup () {
 }
 
 void loop () {
-  static Dht11 sensor(DHT_DATA_PIN);
   int temp_val = 0;
   int hum_val = 0;
+  static Dht11 sensor(DHT_DATA_PIN);
 
   word len = ether.packetReceive();
   word pos = ether.packetLoop(len);
 
-  if (millis() > timer) {
+  // Control when we could execute the next HTTP request
+  if (millis() > timer)
     switch (sensor.read()) {
       case Dht11::OK:
         switch (next) {
           case 1:
+            // Read humidity level
             Serial.print("Humidity (%): ");
             hum_val = sensor.getHumidity();
             Serial.println(hum_val);
@@ -81,10 +106,12 @@ void loop () {
               timer = millis() + 5000;
             }
             next = 2;
+            // Added delay to allow the sensor to obtain measurements correctly
             delay(2000);
             break;
 
           case 2:
+            // Read temperature level
             Serial.print("Temperature (C): ");
             temp_val = sensor.getTemperature();
             Serial.println(temp_val);
@@ -93,15 +120,18 @@ void loop () {
               timer = millis() + 5000;
             }
             next = 1;
+            // Added delay to allow the sensor to obtain measurements correctly
             delay(2000);
             break;
         }
         break;
 
+      // Manage ERROR_CHECKSUM DHT11 error
       case Dht11::ERROR_CHECKSUM:
         Serial.println("Checksum error");
         break;
 
+      // Manage ERROR_TIMEOUT DHT11 error
       case Dht11::ERROR_TIMEOUT:
         Serial.println("Timeout error");
         break;
