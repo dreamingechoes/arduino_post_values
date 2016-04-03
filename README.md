@@ -1,6 +1,6 @@
 # Arduino Post Values
 
-Program that sends sensors values from an Arduino board to an RESTful API. You can see the usage on [this post](http://dreamingecho.es/physical-software-made-easy-with-arduino-and-ruby-on-rails/).
+Program that sends sensor values from an Arduino board to a RESTful API. You can see the usage on [this post](http://dreamingecho.es/physical-software-made-easy-with-arduino-and-ruby-on-rails/).
 
 ## About
 
